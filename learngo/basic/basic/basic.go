@@ -10,7 +10,7 @@ var (
 	aa, ss = 2, "kk"
 )
 
-func variable()  {
+func variable() {
 	a, b := 3, 4
 	var s = "abc"
 	fmt.Printf("%d %d %q \n", a, b, s)
@@ -18,21 +18,27 @@ func variable()  {
 
 }
 
-func triangle()  {
+func triangle() {
 	var a, b = 3, 4
 	var c int
 	c = int(math.Sqrt(float64(a*a + b*b)))
 	fmt.Println(c)
 }
 
-func euler()  {
-	c := 3 + 4i
-	fmt.Println(cmplx.Abs(c))
-	fmt.Println(cmplx.Exp(1i * math.Pi) + 1)
-	fmt.Println(cmplx.Pow(math.E, 1i * math.Pi) + 1)
+func calTriangle(a, b int) int {
+	var c int
+	c = int(math.Sqrt(float64(a*a + b*b)))
+	return c
 }
 
-func consts()  {
+func euler() {
+	c := 3 + 4i
+	fmt.Println(cmplx.Abs(c))
+	fmt.Println(cmplx.Exp(1i*math.Pi) + 1)
+	fmt.Println(cmplx.Pow(math.E, 1i*math.Pi) + 1)
+}
+
+func consts() {
 	const filename string = "abc.txt"
 	const a, b = 3, 4
 	var c int
@@ -40,7 +46,7 @@ func consts()  {
 	fmt.Println(c)
 }
 
-func enums()  {
+func enums() {
 	const (
 		cpp = iota
 		_
