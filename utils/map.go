@@ -1,18 +1,17 @@
 package expire_map
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
 
-type val struct {
+type Value struct {
 	data        interface{}
 	expiredTime int64
 }
 
 type ExpiredMap struct {
-	m map[interface{}]*val
+	m map[interface{}]*Value
 	// 过期时间作为key，放在map中
 	timeMap map[int64][]interface{}
 	lock    *sync.Mutex
@@ -21,7 +20,7 @@ type ExpiredMap struct {
 
 func NewExpiredMap() *ExpiredMap {
 	e := ExpiredMap{
-		m:       make(map[interface{}]*val),
+		m:       make(map[interface{}]*Value),
 		timeMap: make(map[int64][]interface{}),
 		lock:    new(sync.Mutex),
 		stop:    make(chan struct{}),
@@ -46,8 +45,7 @@ func (e *ExpiredMap) run(now int64) {
 	// 从channel接收，并进行删除
 	go func() {
 		for v := range deleteChannel {
-			fmt.Println("deleteChannel ", v)
-			e.DeleteMulti(v.keys)
+			e.DeleteMulti(v.keys, v.time)
 		}
 	}()
 
@@ -71,15 +69,15 @@ func (e *ExpiredMap) run(now int64) {
 	}
 }
 
-func (e *ExpiredMap) Set(key, value interface{}, expireSecond int64) {
+func (e *ExpiredMap) Put(key, val interface{}, expireSecond int64) {
 	if expireSecond <= 0 {
 		return
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	expiredTime := time.Now().Unix() + expireSecond
-	e.m[key] = &val{
-		data:        value,
+	e.m[key] = &Value{
+		data:        val,
 		expiredTime: expiredTime,
 	}
 	e.timeMap[expiredTime] = append(e.timeMap[expireSecond], e.m[key])
@@ -91,7 +89,16 @@ func (e *ExpiredMap) Get(key interface{}) (value interface{}, found bool) {
 	if found = e.checkDeleteKey(key); !found {
 		return nil, false
 	}
-	return e.m[key], true
+	return e.m[key].data, true
+}
+
+func (e *ExpiredMap) GetOrDefault(key, defaultValue interface{}) (value interface{}, found bool) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+	if found = e.checkDeleteKey(key); !found {
+		return defaultValue, false
+	}
+	return e.m[key].data, true
 }
 
 func (e *ExpiredMap) Delete(key interface{}) {
@@ -100,11 +107,13 @@ func (e *ExpiredMap) Delete(key interface{}) {
 	delete(e.m, key)
 }
 
-func (e *ExpiredMap) DeleteMulti(keys []interface{}) {
+func (e *ExpiredMap) DeleteMulti(keys []interface{}, time int64) {
 	e.lock.Lock()
 	defer e.lock.Unlock()
 	for _, key := range keys {
-		delete(e.m, key)
+		delete(e.timeMap, time)
+		// 这里调用checkDeleteKey，防止出现对一个key反复Put误删
+		e.checkDeleteKey(key)
 	}
 }
 
@@ -127,13 +136,24 @@ func (e *ExpiredMap) TTL(key interface{}) int64 {
 func (e *ExpiredMap) Clear() {
 	e.lock.Lock()
 	defer e.lock.Unlock()
-	e.m = make(map[interface{}]*val)
+	e.m = make(map[interface{}]*Value)
 	e.timeMap = make(map[int64][]interface{})
 }
+
+func (e *ExpiredMap) Foreach(handle func(key, val interface{})) {
+	e.lock.Lock()
+	defer e.lock.Unlock()
+	for k, v := range e.m {
+		if !e.checkDeleteKey(k) {
+			continue
+		}
+		handle(k, v.data)
+	}
+}
+
 func (e *ExpiredMap) checkDeleteKey(key interface{}) bool {
 	if val, found := e.m[key]; found {
 		if val.expiredTime <= time.Now().Unix() {
-			fmt.Println("delete ", key)
 			delete(e.m, key)
 			return false
 		}
