@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
+	expire_map "showcase-go/utils"
+	"strings"
 	"time"
 )
 
@@ -47,10 +49,7 @@ func main() {
 	informer := informerFactory.Events().V1beta1().Events().Informer()
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {
 		event := obj.(*v1beta1.Event)
-		reason := event.Reason
-		if reason == "UnexpectedAdmissionError" {
-			fmt.Println(event.Reason, event.Namespace, event.GetName(), event.DeprecatedSource.Host)
-		}
+		processEvent(clientSet, event)
 	}})
 
 	stopper := make(chan struct{})
@@ -58,4 +57,79 @@ func main() {
 	informerFactory.Start(stopper)
 	// 等待所有启动的Informer的缓存被同步
 	informerFactory.WaitForCacheSync(stopper)
+	time.Sleep(time.Second * 60 * 60)
+}
+
+// ErrorNode，不能调度的node
+type errorNode struct {
+	nodeName    string
+	createTime  time.Time
+	expiredTime int64
+}
+
+var expiredMap = expire_map.NewExpiredMap()
+
+func isErrorNode(taskId, nodeName string) bool {
+	nodeSet, found := expiredMap.Get(taskId)
+	if !found {
+		return false
+	}
+	_, f := nodeSet.(*expire_map.ExpiredMap).Get(nodeName)
+	if !f {
+		return false
+	}
+	return true
+}
+
+func processEvent(clientSet *kubernetes.Clientset, event *v1beta1.Event) {
+	createTimestamp := event.CreationTimestamp
+	if time.Now().Unix()-createTimestamp.Unix() > 20 {
+		return
+	}
+	reason := event.Reason
+	if reason == "UnexpectedAdmissionError" {
+		namespace := event.Namespace
+		podName := event.Name
+		podName = podName[0:strings.LastIndex(podName, ".")]
+
+		pod, err := clientSet.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+		if err != nil {
+			return
+		}
+		labels := pod.Labels
+		if labels == nil {
+			fmt.Println("no label", event.ObjectMeta.Labels)
+			return
+		}
+		taskId := labels["taskid"]
+		if taskId == "" {
+			fmt.Println("no taskId")
+			return
+		}
+		nodeName := event.DeprecatedSource.Host
+		node := errorNode{
+			nodeName:    nodeName,
+			createTime:  time.Now(),
+			expiredTime: time.Now().Unix() + 30,
+		}
+
+		nodeSet, _ := expiredMap.GetOrDefault(taskId, expire_map.NewExpiredMap())
+		set := nodeSet.(*expire_map.ExpiredMap)
+		set.Put(nodeName, node, 10)
+		expiredMap.Put(taskId, set, 10)
+		print(expiredMap)
+		fmt.Println(isErrorNode(taskId, nodeName))
+	}
+}
+
+func print(m *expire_map.ExpiredMap) {
+	fmt.Print("total task ", m.Length())
+	m.Foreach(func(key, val interface{}) {
+		fmt.Print("taskId ", key, " node ")
+		val.(*expire_map.ExpiredMap).Foreach(func(key, val interface{}) {
+			fmt.Print(key, " ")
+		})
+	})
+	fmt.Println()
+
 }
