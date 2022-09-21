@@ -25,3 +25,7 @@ nbdist/
 
 ###
 logs
+
+go.sum
+*.out
+*.test
