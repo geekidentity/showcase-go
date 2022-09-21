@@ -1,10 +1,11 @@
 package main
 
 import (
-	"learngo/errorhandling/filelistingserver/filelisting"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"showcase-go/learngo/errorhandling/filelistingserver/filelisting"
 )
 
 type appHandler func(writer http.ResponseWriter, request *http.Request) error
