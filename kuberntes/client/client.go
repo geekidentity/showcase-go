@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog"
 	"path/filepath"
 	expire_map "showcase-go/utils"
 	"strings"
@@ -18,6 +19,12 @@ import (
 )
 
 func main() {
+	event()
+	time.Sleep(time.Second * 60 * 60)
+
+}
+
+func event() {
 
 	var kubeconfig *string
 
@@ -50,14 +57,14 @@ func main() {
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{AddFunc: func(obj interface{}) {
 		event := obj.(*v1beta1.Event)
 		processEvent(clientSet, event)
-	}})
+	},
+	})
 
 	stopper := make(chan struct{})
-	defer close(stopper) //启动informer, Lister && Watch
+	//defer close(stopper) //启动informer, Lister && Watch
 	informerFactory.Start(stopper)
 	// 等待所有启动的Informer的缓存被同步
 	informerFactory.WaitForCacheSync(stopper)
-	time.Sleep(time.Second * 60 * 60)
 }
 
 // ErrorNode，不能调度的node
@@ -87,11 +94,16 @@ func processEvent(clientSet *kubernetes.Clientset, event *v1beta1.Event) {
 		return
 	}
 	reason := event.Reason
-	if reason == "UnexpectedAdmissionError" {
+	fmt.Println(reason)
+	if strings.TrimSpace(reason) == "UnexpectedAdmissionError" {
 		namespace := event.Namespace
 		podName := event.Name
 		podName = podName[0:strings.LastIndex(podName, ".")]
-
+		nodeName := event.DeprecatedSource.Host
+		fmt.Printf("filter plugin %v eventProcessor for podName %v on nodeName %v",
+			"Name", podName, nodeName)
+		klog.V(3).Infof("filter plugin %v eventProcessor for podName %v on nodeName %v",
+			"Name", podName, nodeName)
 		pod, err := clientSet.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
 		if err != nil {
 			return
@@ -106,7 +118,6 @@ func processEvent(clientSet *kubernetes.Clientset, event *v1beta1.Event) {
 			fmt.Println("no taskId")
 			return
 		}
-		nodeName := event.DeprecatedSource.Host
 		node := errorNode{
 			nodeName:    nodeName,
 			createTime:  time.Now(),
