@@ -8,11 +8,11 @@ metadata:
 spec:
   selector:
     matchLabels:
-      name: agent-server
+      k8s-app: agent-server
   template:
     metadata:
       labels:
-        name: agent-server
+        k8s-app: agent-server
     spec:
       affinity:
         nodeAffinity:
