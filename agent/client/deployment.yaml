@@ -40,7 +40,7 @@ spec:
             - name: cuda
               mountPath: /usr/local/cuda/
           env:
-            - name: LOCAL_NODE_NAME
+            - name: Hostname
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
