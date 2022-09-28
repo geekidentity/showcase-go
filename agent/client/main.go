@@ -13,13 +13,17 @@ import (
 var M = make(map[string]interface{})
 
 func main() {
+	agentServer, found := os.LookupEnv("Agent_Server")
+	if !found {
+		agentServer = "http://localhost:8888"
+	}
 	node := nodeInfo()
 	marshal, err := json.Marshal(node)
 	if err != nil {
 		return
 	}
 	body := strings.NewReader(string(marshal))
-	request, err := http.NewRequest(http.MethodPost, "http://localhost:8888/register", body)
+	request, err := http.NewRequest(http.MethodPost, agentServer+"/register", body)
 	if err != nil {
 		return
 	}
