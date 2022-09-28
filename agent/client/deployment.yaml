@@ -4,15 +4,15 @@ metadata:
   name: agent-server
   namespace: test-inference
   labels:
-    k8s-app: agent-server
+    k8s-app: agent-client
 spec:
   selector:
     matchLabels:
-      name: agent-server
+      k8s-app: agent-client
   template:
     metadata:
       labels:
-        name: agent-server
+        k8s-app: agent-client
     spec:
       affinity:
         nodeAffinity:
@@ -24,7 +24,7 @@ spec:
                     values:
                       - P40
       containers:
-        - name: agent-server
+        - name: agent-client
           image: harbor.58corp.com/ailab/agent/client:0.0.1
           imagePullPolicy: Never
           ports:
