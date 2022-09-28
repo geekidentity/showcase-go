@@ -3,9 +3,9 @@ package node
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
 	"net/http"
 	"showcase-go/agent/api"
 )
@@ -17,9 +17,9 @@ func (n *NodeController) Register(responseWriter http.ResponseWriter, request *h
 	}
 	var node api.Node
 	err = json.Unmarshal(bytes, &node)
-	fmt.Println(node.Cuda)
+	log.Println(node.Cuda)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 	n.service.Register(context.Background(), &node, metav1.CreateOptions{})
@@ -27,7 +27,7 @@ func (n *NodeController) Register(responseWriter http.ResponseWriter, request *h
 		return err
 	}
 	body := string(bytes)
-	fmt.Println(body)
+	log.Println(body)
 	_, err = responseWriter.Write(bytes)
 	if err != nil {
 		return err

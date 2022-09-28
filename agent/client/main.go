@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"showcase-go/agent/api"
@@ -25,9 +25,9 @@ func main() {
 	}
 	client := http.DefaultClient
 	response, err := client.Do(request)
-	fmt.Println(response)
+	log.Println(response)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		return
 	}
 }
@@ -46,6 +46,6 @@ func nodeInfo() api.Node {
 		},
 		Cuda: M["cuda"],
 	}
-	fmt.Println(node)
+	log.Println(node)
 	return node
 }
