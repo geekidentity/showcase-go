@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent-server
+  namespace: test-inference
+  labels:
+    k8s-app: agent-server
+spec:
+  selector:
+    matchLabels:
+      name: agent-server
+  template:
+    metadata:
+      labels:
+        name: agent-server
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: usage
+                    operator: In
+                    values:
+                      - offline-debug
+      containers:
+        - name: agent-server
+          image: harbor.58corp.com/ailab/agent/server:0.0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8888
+          resources:
+            limits:
+              memory: 2048Mi
+              cpu: 1000m
+            requests:
+              cpu: 200m
+              memory: 1024Mi
+          volumeMounts:
+            - name: cuda
+              mountPath: /usr/local/cuda/
+          env:
+            - name: LOCAL_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: SPRING_PROFILES_ACTIVE
+              value: test
+      volumes:
+        - name: cuda
+          hostPath:
+            path: /usr/local/cuda/

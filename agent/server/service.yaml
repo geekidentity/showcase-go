@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: agent-server
+  name: agent-server
+  namespace: test-inference
+spec:
+  ports:
+    - port: 8888
+      targetPort: 8888
+  selector:
+    k8s-app: agent-server
