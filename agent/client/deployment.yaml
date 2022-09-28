@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: agent-server
+  name: agent-client
   namespace: test-inference
   labels:
     k8s-app: agent-client
