@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"learngo/retriever/mock"
-	real2 "learngo/retriever/real"
+	"showcase-go/learngo/retriever/mock"
+	real2 "showcase-go/learngo/retriever/real"
 	"time"
 )
 
@@ -43,8 +43,6 @@ func session(s RetrieverPoster) string {
 	return s.Get(url)
 }
 
-
-
 func main() {
 	var r Retriever
 	r = &mock.Retriever{Contents: "mock html"}
@@ -52,7 +50,7 @@ func main() {
 	inspect(r)
 	r = &real2.Retriever{
 		UserAgent: "Mozilla/5.0",
-		TimeOut: time.Minute,
+		TimeOut:   time.Minute,
 	}
 	//fmt.Println(download(r))
 	inspect(r)
@@ -75,5 +73,3 @@ func inspect(r Retriever) {
 		fmt.Println("UserAgent: ", v.UserAgent)
 	}
 }
-
-
