@@ -11,7 +11,7 @@ func TestParseCityList(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%s\n", contents)
+	//fmt.Printf("%s\n", contents)
 	result := ParseCityList(contents)
 	fmt.Printf("result size : %d", len(result.Requests))
 }

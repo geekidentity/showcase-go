@@ -12,13 +12,20 @@ import (
 	"net/http"
 )
 
+var client = http.DefaultClient
+
 func Fetch(url string) ([]byte, error) {
-	response, err := http.Get(url)
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36")
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK {
+	if response.StatusCode >= 300 {
 		return nil, fmt.Errorf("wrong status code %d", response.StatusCode)
 	}
 
